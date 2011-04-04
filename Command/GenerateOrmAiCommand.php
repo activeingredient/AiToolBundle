@@ -18,7 +18,7 @@ use Symfony\Bundle\DoctrineBundle\Command\GenerateEntitiesDoctrineCommand;
  * 
  */
 
-class GenerateOrmInfoViewCommand extends GenerateEntitiesDoctrineCommand
+class GenerateOrmAiCommand extends GenerateEntitiesDoctrineCommand
 {
     protected function configure()
     {

@@ -1,0 +1,4 @@
+# Services
+services:
+  dozer:
+    class: Ai\ToolBundle\Service\Dozer.php
