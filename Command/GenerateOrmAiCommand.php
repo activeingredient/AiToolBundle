@@ -10,12 +10,22 @@
 namespace Ai\ToolBundle\Command;
 
 use Symfony\Bundle\DoctrineBundle\Command\GenerateEntitiesDoctrineCommand;
-
+use Symfony\Bundle\FrameworkBundle\Command\Command;
+use Symfony\Bundle\FrameworkBundle\Console\Application;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\Output;
+use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\Mapping\ClassMetadataInfo;
+use Doctrine\ORM\Tools\EntityGenerator;
+use Doctrine\ORM\Tools\EntityRepositoryGenerator;
+use Symfony\Component\HttpKernel\Bundle\Bundle;
+use Doctrine\DBAL\Tools\Console\Helper\ConnectionHelper;
+use Doctrine\ORM\Tools\Console\Helper\EntityManagerHelper;
+use Doctrine\ORM\Tools\DisconnectedClassMetadataFactory;
 
 /**
  * Generate annotated entity and repository classes from metadata mapping information
