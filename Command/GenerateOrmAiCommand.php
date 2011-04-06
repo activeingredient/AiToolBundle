@@ -24,7 +24,7 @@ use Symfony\Component\Console\Output\Output;
  * 
  */
 
-class GenerateOrmInfoViewCommand extends GenerateEntitiesDoctrineCommand
+class GenerateOrmAiCommand extends GenerateEntitiesDoctrineCommand
 {
     protected function configure()
     {
