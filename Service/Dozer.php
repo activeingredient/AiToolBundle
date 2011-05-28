@@ -33,30 +33,33 @@ class Dozer
   public function map($bean, $target, $mappings=array(), $properties=array())
   {
     # get a set of properties
-    $reflectionClass = new ReflectionClass($bean);
-    foreach($reflectionClass->getProperties() as $property)
+    if($bean !== null)
     {
-      # check for getter
-      $name = $property->getName();
-      $getter = 'get'.ucfirst($name);
-      if(method_exists($bean, $getter))
+      $reflectionClass = new ReflectionClass($bean);
+      foreach($reflectionClass->getProperties() as $property)
       {
-        $properties[$name] = $object->getter();
-      }
-      
-      # use direct property access
-      else
-      {
-        $property->setAccessible(true);
-        $properties[$name] = $property->getValue();
-      }
-      
-      # check for field mapping
-      if(isset($mappings[$name]))
-      {
-        # copy value and unset
-        $properties[$mappings[$name]] = $properties[$name];
-        unset($properties[$name]);
+        # check for getter
+        $name = $property->getName();
+        $getter = 'get'.ucfirst($name);
+        if(method_exists($bean, $getter))
+        {
+          $properties[$name] = $object->$getter();
+        }
+        
+        # use direct property access
+        else
+        {
+          $property->setAccessible(true);
+          $properties[$name] = $property->getValue();
+        }
+        
+        # check for field mapping
+        if(isset($mappings[$name]))
+        {
+          # copy value and unset
+          $properties[$mappings[$name]] = $properties[$name];
+          unset($properties[$name]);
+        }
       }
     }
     
@@ -65,17 +68,23 @@ class Dozer
   }
   
   /**
-   * Inject new instance or existing obj with specified properties
+   * Inject an array, new instance or existing obj with specified properties
    *
-   * @param $bean - namespaced class or object
+   * @param $bean - array, namespaced class or object
    * @param $properties - array
    * 
    * @return $bean - object
    */
   public function inject($bean, $properties)
   {
+    # are we mapping to an array
+    if(is_array($bean))
+    {
+      return $properties;
+    }
+    
     # do we have an instance up and running
-    if(is_object($bean))
+    elseif(is_object($bean))
     {
       # get relection class
       $reflectionClass = new ReflectionClass(get_class($bean));
