@@ -23,8 +23,8 @@ class Dozer
   /**
    * Map bean properties to target
    *
-   * @param $bean - object to map from
-   * @param $target - namespaced class or object to map to
+   * @param $bean - object to map from (or null to extract from an array)
+   * @param $target - (empty) array, namespaced class or object to map to
    * @param $mappings - optional array of field mappings
    * @param $properties - optional array of defaults
    * 
@@ -32,8 +32,8 @@ class Dozer
    */
   public function map($bean, $target, $mappings=array(), $properties=array())
   {
-    # get a set of properties
-    if($bean !== null)
+    # get a set of properties, if bean is a valid object
+    if($bean !== null && is_object($bean))
     {
       $reflectionClass = new ReflectionClass($bean);
       foreach($reflectionClass->getProperties() as $property)
