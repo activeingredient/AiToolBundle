@@ -9,26 +9,18 @@
 
 namespace Ai\ToolBundle\Command;
 
-use Symfony\Bundle\DoctrineBundle\Command\GenerateEntitiesDoctrineCommand;
-use Symfony\Bundle\FrameworkBundle\Command\Command;
-use Symfony\Bundle\FrameworkBundle\Console\Application;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Output\Output;
-use Doctrine\ORM\Mapping\ClassMetadata;
-use Doctrine\ORM\Mapping\ClassMetadataInfo;
-use Doctrine\ORM\Tools\EntityGenerator;
 use Doctrine\ORM\Tools\EntityRepositoryGenerator;
-use Symfony\Component\HttpKernel\Bundle\Bundle;
-use Doctrine\DBAL\Tools\Console\Helper\ConnectionHelper;
-use Doctrine\ORM\Tools\Console\Helper\EntityManagerHelper;
-use Doctrine\ORM\Tools\DisconnectedClassMetadataFactory;
+use Symfony\Bundle\DoctrineBundle\Mapping\MetadataFactory;
 
 /**
- * Generate annotated entity and repository classes from metadata mapping information
+ * Generate annotated entity and repository classes from metadata mapping information.
+ *
+ * This differs from the ai:generate:orm command only in some defaults
+ *  for the EntityGenerator
  *
  * @author Mark Brennand <mark@activeingredient.com.au>
  * 
@@ -36,93 +28,57 @@ use Doctrine\ORM\Tools\DisconnectedClassMetadataFactory;
 
 class GenerateOrmAiCommand extends GenerateEntitiesDoctrineCommand
 {
-    protected function configure()
-    {
-        $this
-            ->setName('ai:generate:orm')
-            ->setDescription('Generate orm classes and method stubs from your mapping information.')
-            ->addArgument('bundle', InputArgument::REQUIRED, 'The bundle to initialize the entity or entities in.')
-            ->addOption('entity', null, InputOption::VALUE_OPTIONAL, 'The entity class to initialize (shortname without namespace).')
-            ->setHelp(<<<EOT
-The <info>ai:generate:orm</info> command generates orm classes and method stubs from your mapping information:
+  protected function configure()
+  {
+    $this
+      ->setName('ai:generate:orm')
+      ->setDescription('Generate entity classes and method stubs from your mapping information')
+      ->addArgument('name', InputArgument::REQUIRED, 'A bundle name, a namespace, or a class name')
+      ->addOption('path', null, InputOption::VALUE_REQUIRED, 'The path where to generate entities when it cannot be guessed')
+      ->addOption('no-backup', null, InputOption::VALUE_NONE, 'Do not backup existing entities files.')
+      ->setHelp(<<<EOT
+The <info>ai:generate:orm</info> command generates entity classes
+and method stubs from your mapping information:
 
-You have to limit generation of entities to an individual bundle:
+You have to limit generation of entities:
 
-  <info>./app/console ai:generate:orm "AiCoreBundle"</info>
+* To a bundle:
 
-Alternatively, you can limit generation to a single entity within a bundle:
+  <info>./app/console ai:generate:orm MyCustomBundle</info>
 
-  <info>./app/console ai:generate:orm "AiCoreBundle" --entity="User"</info>
+* To a single entity:
 
-You have to specify the shortname (without namespace) of the entity you want to filter for.
+  <info>./app/console ai:generate:orm MyCustomBundle:User</info>
+  <info>./app/console ai:generate:orm MyCustomBundle/Entity/User</info>
+
+* To a namespace
+
+  <info>./app/console ai:generate:orm MyCustomBundle/Entity</info>
+
+If the entities are not stored in a bundle, and if the classes do not exist,
+the command has no way to guess where they should be generated. In this case,
+you must provide the <comment>--path</comment> option:
+
+  <info>./app/console ai:generate:orm Blog/Entity --path=src/</info>
+
+You should provide the <comment>--no-backup</comment> option if you dont mind to back up files
+before to generate entities:
+
+  <info>./app/console ai:generate:orm Blog/Entity --no-backup</info>
+
 EOT
-        );
-    }
-
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $bundleName = $input->getArgument('bundle');
-        $filterEntity = $input->getOption('entity');
-
-        $foundBundle = $this->findBundle($bundleName);
-
-        if ($metadatas = $this->getBundleMetadatas($foundBundle)) {
-            
-            # do entity classes
-            $output->writeln(sprintf('Generating entities for "<info>%s</info>"', $foundBundle->getName()));
-            $entityGenerator = $this->getEntityGenerator();
-
-            foreach ($metadatas as $metadata) {
-                if ($filterEntity && $metadata->reflClass->getShortName() !== $filterEntity) {
-                    continue;
-                }
-
-                if (strpos($metadata->name, $foundBundle->getNamespace()) === false) {
-                    throw new \RuntimeException(
-                        "Entity " . $metadata->name . " and bundle don't have a common namespace, ".
-                        "generation failed because the target directory cannot be detected.");
-                }
-
-                $output->writeln(sprintf('  > generating <comment>%s</comment>', $metadata->name));
-                $entityGenerator->generate(array($metadata), $this->findBasePathForBundle($foundBundle));
-            }
-            
-            # now do repository classes
-            $output->writeln(sprintf('Generating entity repositories for "<info>%s</info>"', $foundBundle->getName()));
-            $generator = new EntityRepositoryGenerator();
-            
-            foreach ($metadatas as $metadata) {
-                if ($filterEntity && $filterEntity !== $metadata->reflClass->getShortname()) {
-                    continue;
-                }
-
-                if ($metadata->customRepositoryClassName) {
-                    if (strpos($metadata->customRepositoryClassName, $foundBundle->getNamespace()) === false) {
-                        throw new \RuntimeException(
-                            "Repository " . $metadata->customRepositoryClassName . " and bundle don't have a common namespace, ".
-                            "generation failed because the target directory cannot be detected.");
-                    }
-
-                    $output->writeln(sprintf('  > <info>OK</info> generating <comment>%s</comment>', $metadata->customRepositoryClassName));
-                    $generator->writeEntityRepositoryClass($metadata->customRepositoryClassName, $this->findBasePathForBundle($foundBundle));
-                } else {
-                    $output->writeln(sprintf('  > <error>SKIP</error> no custom repository for <comment>%s</comment>', $metadata->name));
-                }
-            }
-        } else {
-            throw new \RuntimeException("Bundle " . $bundleName . " does not contain any mapped entities.");
-        }
-    }
-    
-    protected function getEntityGenerator()
-    {
-        $entityGenerator = new EntityGenerator();
-        $entityGenerator->setAnnotationPrefix("orm:");
-        $entityGenerator->setGenerateAnnotations(true);
-        $entityGenerator->setGenerateStubMethods(true);
-        $entityGenerator->setRegenerateEntityIfExists(false);
-        $entityGenerator->setUpdateEntityIfExists(true);
-        $entityGenerator->setNumSpaces(2);
-        return $entityGenerator;
-    }
+    );
+  }
+  
+  protected function getEntityGenerator()
+  {
+    $entityGenerator = new EntityGenerator();
+    $entityGenerator->setAnnotationPrefix('@Doctrine\\ORM\\Mapping\\');
+    $entityGenerator->setGenerateAnnotations(true);
+    $entityGenerator->setGenerateStubMethods(true);
+    $entityGenerator->setRegenerateEntityIfExists(false);
+    $entityGenerator->setUpdateEntityIfExists(true);
+    $entityGenerator->setNumSpaces(2);
+    return $entityGenerator;
+  }
 }
