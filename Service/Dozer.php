@@ -35,32 +35,55 @@ class Dozer
     # get a set of properties, if bean is a valid object
     if($bean !== null && is_object($bean))
     {
-      $reflectionClass = new ReflectionClass($bean);
-      foreach($reflectionClass->getProperties() as $property)
+      # we have to search all parents for private members
+      $seen = array();
+      
+      # this will be our sentinal
+      $className = get_class($bean);
+      do
       {
-        # check for getter
-        $name = $property->getName();
-        $getter = 'get'.ucfirst($name);
-        if(method_exists($bean, $getter))
+        $reflectionClass = new ReflectionClass($className);
+        foreach($reflectionClass->getProperties() as $property)
         {
-          $properties[$name] = $object->$getter();
+          # extract name
+          $name = $property->getName();
+          
+          # don't duplicate from parent
+          if(isset($seen[$name]))
+          {
+            continue;
+          }
+          
+          # make sure we don't get it next time
+          $seen[$name] = 1;
+          
+          # check for getter
+          $getter = 'get'.ucfirst($name);
+          if(method_exists($bean, $getter))
+          {
+            $properties[$name] = $object->$getter();
+          }
+          
+          # use direct property access
+          else
+          {
+            $property->setAccessible(true);
+            $properties[$name] = $property->getValue();
+          }
+          
+          # check for field mapping
+          if(isset($mappings[$name]))
+          {
+            # copy value and unset
+            $properties[$mappings[$name]] = $properties[$name];
+            unset($properties[$name]);
+          }
         }
         
-        # use direct property access
-        else
-        {
-          $property->setAccessible(true);
-          $properties[$name] = $property->getValue();
-        }
+        # check for parent
+        $className = $reflectionClass->getParentClass()?$reflectionClass->getParentClass()->getName():'';
         
-        # check for field mapping
-        if(isset($mappings[$name]))
-        {
-          # copy value and unset
-          $properties[$mappings[$name]] = $properties[$name];
-          unset($properties[$name]);
-        }
-      }
+      } while($className);
     }
     
     # now inject
