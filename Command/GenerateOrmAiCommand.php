@@ -77,7 +77,7 @@ EOT
   {
     $entityGenerator = new EntityGenerator();
     $entityGenerator->setAnnotationPrefix("Doctrine\\ORM\\Mapping\\");
-    $entityGenerator->setGenerateAnnotations(true);
+    $entityGenerator->setGenerateAnnotations(false);
     $entityGenerator->setGenerateStubMethods(true);
     $entityGenerator->setRegenerateEntityIfExists(false);
     $entityGenerator->setUpdateEntityIfExists(true);
