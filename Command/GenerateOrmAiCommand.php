@@ -76,7 +76,7 @@ EOT
   protected function getEntityGenerator()
   {
     $entityGenerator = new EntityGenerator();
-    $entityGenerator->setAnnotationPrefix('@Doctrine\\ORM\\Mapping\\');
+    $entityGenerator->setAnnotationPrefix("Doctrine\\ORM\\Mapping\\");
     $entityGenerator->setGenerateAnnotations(true);
     $entityGenerator->setGenerateStubMethods(true);
     $entityGenerator->setRegenerateEntityIfExists(false);
