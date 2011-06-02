@@ -42,7 +42,7 @@ class Dozer
       $className = get_class($bean);
       do
       {
-        $reflectionClass = new ReflectionClass($className);
+        $reflectionClass = new \ReflectionClass($className);
         foreach($reflectionClass->getProperties() as $property)
         {
           # extract name
@@ -110,13 +110,13 @@ class Dozer
     elseif(is_object($bean))
     {
       # get relection class
-      $reflectionClass = new ReflectionClass(get_class($bean));
+      $reflectionClass = new \ReflectionClass(get_class($bean));
     }
     
     # get relection class and instance of bean
     else
     {
-      $reflectionClass = new ReflectionClass($bean);
+      $reflectionClass = new \ReflectionClass($bean);
       $bean = $reflectionClass->newInstance();
     }
     
@@ -133,7 +133,7 @@ class Dozer
    * 
    * @return $object - object
    */
-  private function populate(ReflectionClass $reflectionClass, $object, $properties)
+  private function populate(\ReflectionClass $reflectionClass, $object, $properties)
   {
     # now loop and build
     foreach($properties as $name=>$value)
