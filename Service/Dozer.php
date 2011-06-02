@@ -61,7 +61,7 @@ class Dozer
           $getter = 'get'.ucfirst($name);
           if(method_exists($bean, $getter))
           {
-            $properties[$name] = $object->$getter();
+            $properties[$name] = $bean->$getter();
           }
           
           # use direct property access
